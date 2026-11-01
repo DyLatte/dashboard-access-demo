@@ -5,7 +5,108 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>千川投放数据看板</title>
-    <link rel="stylesheet" href="styles.css?v=20261101110641" />
+    <style>:root {
+  color-scheme: light;
+  --ink: #17212b;
+  --muted: #6d7885;
+  --line: #e5e9ee;
+  --canvas: #f4f6f8;
+  --surface: #ffffff;
+  --green: #0e8f73;
+  --blue: #2467c7;
+  --orange: #d87528;
+  --purple: #7654b3;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--canvas); }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+
+.topbar {
+  min-height: 76px; padding: 0 38px; background: #fff;
+  border-bottom: 1px solid var(--line); display: flex; align-items: center;
+  justify-content: space-between; gap: 20px;
+}
+.brand-block, .topbar-meta, .panel-heading, .panel-actions, .table-toolbar { display: flex; align-items: center; }
+.brand-block { gap: 13px; }
+.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: #183f5c; color: #fff; font-weight: 800; }
+.eyebrow { margin: 0 0 3px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+h1, h2 { margin: 0; letter-spacing: 0; }
+h1 { font-size: 19px; }
+h2 { font-size: 21px; }
+.panel-subtitle { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+.topbar-meta { gap: 10px; color: var(--muted); font-size: 13px; }
+.connection-status { display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px; border: 1px solid #dfe7e4; border-radius: 999px; background: #f7fbf9; white-space: nowrap; }
+.connection-status[data-state="connected"] { color: #0b775f; border-color: #cce9df; background: #effaf6; }
+.connection-status[data-state="disconnected"] { color: #a4571a; border-color: #f1ddc7; background: #fff8ef; }
+.connection-status[data-state="offline"] { color: #687480; border-color: #dfe3e7; background: #f5f6f7; }
+.connection-status[data-state="checking"] { color: var(--muted); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #28a477; box-shadow: 0 0 0 4px #e6f5ef; }
+.page-shell { max-width: 1440px; margin: 0 auto; padding: 30px 38px 24px; }
+.metric-card { position: relative; overflow: hidden; min-height: 128px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.metric-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--metric-color); }
+.accent-green { --metric-color: var(--green); }
+.accent-blue { --metric-color: var(--blue); }
+.accent-orange { --metric-color: var(--orange); }
+.accent-purple { --metric-color: var(--purple); }
+.metric-label { display: block; color: var(--muted); font-size: 13px; }
+.metric-card strong { display: block; margin-top: 12px; font-size: 28px; line-height: 1; }
+.metric-note { display: block; margin-top: 12px; color: var(--muted); font-size: 12px; }
+.workspace-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.panel-heading { justify-content: space-between; gap: 16px; padding: 22px 24px 18px; }
+.panel-actions { gap: 9px; }
+.primary-button, .secondary-button, .ghost-button, .text-button { border: 0; border-radius: 6px; padding: 9px 14px; font-size: 13px; }
+.primary-button { color: #fff; background: #1e5d91; }
+.secondary-button { color: #1e5d91; background: #edf4f9; }
+.ghost-button { color: #4b5967; background: #f2f4f6; padding: 7px 11px; }
+.text-button { padding: 0 4px; color: #2467c7; background: transparent; white-space: nowrap; }
+button:hover { filter: brightness(.96); }
+.filter-bar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 16px 24px; background: #fafbfc; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.filter-bar label { display: grid; gap: 6px; min-width: 145px; color: var(--muted); font-size: 12px; }
+.filter-bar select, .filter-bar input { width: 100%; min-height: 36px; padding: 0 10px; color: var(--ink); background: #fff; border: 1px solid #d6dce2; border-radius: 5px; outline: none; }
+.filter-bar input[type="date"] { min-width: 145px; }
+.filter-bar select:focus, .filter-bar input:focus { border-color: #2c73ad; box-shadow: 0 0 0 3px #e6f0f8; }
+.search-field { flex: 1; min-width: 210px !important; }
+.table-toolbar { justify-content: space-between; min-height: 46px; padding: 0 24px; color: var(--muted); font-size: 12px; }
+.toolbar-hint { color: #99a3ad; }
+.topbar-meta { flex-wrap: wrap; justify-content: flex-end; }
+#dataFreshness { max-width: 340px; line-height: 1.6; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 1900px; }
+th, td { padding: 13px 16px; border-top: 1px solid var(--line); text-align: left; white-space: nowrap; font-size: 13px; }
+th { color: #64717f; background: #fbfcfd; font-weight: 600; font-size: 12px; }
+td.copyable { cursor: copy; }
+td.copyable:hover { background: #f1f6fa; }
+.summary-row td { color: #1d4f76; background: #eef6fb; border-top: 2px solid #9fc4dd; font-weight: 700; }
+.summary-row td.copyable:hover { background: #e2f0f8; }
+.number { text-align: right; font-variant-numeric: tabular-nums; }
+.tag { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 4px; font-size: 12px; }
+.tag.green { color: #08745d; background: #e4f5ef; }
+.tag.orange { color: #a4571a; background: #fff0e4; }
+.tag.red { color: #ad3b3b; background: #fde9e9; }
+.tag.gray { color: #687480; background: #edf0f2; }
+.page-footer { display: flex; justify-content: space-between; padding: 16px 2px 0; color: #89939d; font-size: 12px; }
+#copyStatus { color: #168464; }
+.empty-row td { padding: 42px 16px; color: var(--muted); text-align: center; }
+
+@media (max-width: 900px) {
+  .topbar { align-items: flex-start; flex-direction: column; padding: 18px 20px; }
+  .topbar-meta { width: 100%; justify-content: space-between; }
+  .page-shell { padding: 20px; }
+  .panel-heading { align-items: flex-start; flex-direction: column; }
+  .filter-bar { align-items: stretch; }
+}
+@media (max-width: 540px) {
+  .panel-actions { width: 100%; }
+  .panel-actions button { flex: 1; }
+  .filter-bar { padding: 14px 16px; }
+  .filter-bar label, .search-field { min-width: 100% !important; }
+  .filter-bar input[type="date"] { min-width: 100%; }
+  .table-toolbar, .page-footer { align-items: flex-start; flex-direction: column; gap: 5px; padding-left: 16px; padding-right: 16px; }
+}
+</style>
   </head>
   <body>
     <header class="topbar">
@@ -120,8 +221,779 @@
         <span id="copyStatus" role="status" aria-live="polite"></span>
       </footer>
     </main>
-    <script>window.DASHBOARD_SNAPSHOT="snapshot-20261101110641.enc.json";</script>
-    <script src="public-bootstrap.js?v=20261101110641"></script>
-    <script type="module" src="app.js?v=20261101110641"></script>
+    <script>window.DASHBOARD_SNAPSHOT="snapshot-20261101113920.enc.json";window.DASHBOARD_STARTUP_PACKET={"version":1,"iterations":310000,"salt":"M0OCpys+OIbXIXHAm+aJZw==","iv":"gy7Wv0smozbPYOgL","tag":"LLjXI53/2vVu8JVAjyBBVg==","data":"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"};</script>
+<script>﻿(() => {
+  function unpackSnapshot(packet){
+ if(packet.format!=='qianchuan-columns-v1')return packet;
+ const table=source=>{
+  if(!Number.isInteger(source.length)||source.length<0||source.length>1000000||!Array.isArray(source.columns))throw new Error('数据包格式不正确');
+  const records=Array.from({length:source.length},()=>({}));
+  for(const column of source.columns){
+   if(['__proto__','constructor','prototype'].includes(column.name))throw new Error('数据包字段不正确');
+   for(let i=0;i<source.length;i++)if(!column.present||column.present[i]==='1'){
+    records[i][column.name]=Object.hasOwn(column,'constant')?column.constant:column.dictionary?column.dictionary[column.codes[i]]:column.values[i];
+   }
+  }
+  return records;
+ };
+ return {...packet.meta,rows:table(packet.rows),materials:table(packet.materials)};
+}
+  const originalFetch = window.fetch.bind(window);
+  let snapshot, startupSnapshot, packetPromise, detailPromise, keyContext, finishUnlock, busy = false;
+  const unlocked = new Promise(resolve => { finishUnlock = resolve; });
+  const timing = window.dashboardLoadTiming = {};
+  const response = (body, status = 200) => new Response(JSON.stringify(body), {
+    status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+  });
+  const bytes = value => Uint8Array.from(atob(value), c => c.charCodeAt(0));
+  const started = performance.now();
+  let progress;
+  const show = text => { if (progress) progress.textContent = text; };
+
+  function loadPacket() {
+    if (!packetPromise) {
+      // Only ciphertext uses the browser HTTP cache. A new publication has a new filename.
+      packetPromise = (async () => {
+        const downloadStarted = performance.now();
+        if (!startupSnapshot) show('正在准备加密数据…');
+        const res = await originalFetch(window.DASHBOARD_SNAPSHOT, { cache: 'force-cache' });
+        if (!res.ok) throw new Error('加密数据下载失败，请稍后重试');
+        const packet = await res.json();
+        if (packet.version !== 1 || packet.iterations < 310000) throw new Error('加密数据格式不正确');
+        timing[window.DASHBOARD_STARTUP_PACKET ? 'detailDownloadMs' : 'downloadMs'] = Math.round(performance.now() - downloadStarted);
+        if (!busy && !startupSnapshot) show('数据已准备好，请输入访问密码');
+        return packet;
+      })().catch(error => { packetPromise = undefined; throw error; });
+    }
+    return packetPromise;
+  }
+
+  async function decodePacket(packet, key) {
+    const ciphertext = bytes(packet.data), tag = bytes(packet.tag);
+    const combined = new Uint8Array(ciphertext.length + tag.length);
+    combined.set(ciphertext); combined.set(tag, ciphertext.length);
+    const compressed = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes(packet.iv) }, key, combined);
+    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return unpackSnapshot(JSON.parse(await new Response(stream).text()));
+  }
+
+  function loadDetails() {
+    if (snapshot) return Promise.resolve(snapshot);
+    if (!detailPromise) detailPromise = (async () => {
+      const packet = await loadPacket();
+      if (packet.salt !== keyContext.salt || packet.iterations !== keyContext.iterations) throw new Error('明细与首屏数据版本不一致，请刷新');
+      snapshot = await decodePacket(packet, keyContext.key);
+      return snapshot;
+    })().catch(error => { detailPromise = undefined; throw error; });
+    return detailPromise;
+  }
+
+  async function unlock(password) {
+    const submitted = performance.now();
+    show('正在读取加密数据…');
+    const packet = window.DASHBOARD_STARTUP_PACKET || await loadPacket();
+    if (packet.version !== 1 || packet.iterations < 310000) throw new Error('加密数据格式不正确');
+    timing.downloadWaitMs = Math.round(performance.now() - submitted);
+    show('正在验证密码…');
+    const verifyStarted = performance.now();
+    const rawKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: bytes(packet.salt), iterations: packet.iterations,
+      hash: 'SHA-256' }, rawKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    show('正在加载看板…');
+    const decoded = await decodePacket(packet, key);
+    timing.decryptMs = Math.round(performance.now() - verifyStarted);
+    if (window.DASHBOARD_STARTUP_PACKET) {
+      if (!Array.isArray(decoded.preparedRows) || !decoded.preparedPeriod) throw new Error('首屏汇总格式不正确');
+      startupSnapshot = decoded;
+      keyContext = { key, salt: packet.salt, iterations: packet.iterations };
+      timing.inlineStartup = true; timing.downloadMs = 0;
+    } else snapshot = decoded;
+    timing.unlockMs = Math.round(performance.now() - submitted);
+    finishUnlock();
+    // Warm other date ranges after the first table can paint; never hold it up.
+    if (startupSnapshot) setTimeout(() => loadDetails().catch(() => { timing.detailDownloadFailed = true; }), 500);
+  }
+
+  window.fetch = async (input, init = {}) => {
+    const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, location.href);
+    if (url.origin !== location.origin || !url.pathname.startsWith('/api/')) return originalFetch(input, init);
+    if (url.pathname.startsWith('/api/case-library') || url.pathname === '/api/dashboard/weekly-excellent') {
+      return response({ status: 'removed', message: '案例功能已取消' }, 410);
+    }
+    if (url.pathname === '/api/oceanengine/status') return response({ loggedIn: false });
+    if (url.pathname === '/api/oceanengine/open') return response({ status: 'disabled' }, 403);
+    await unlocked;
+    if (url.pathname === '/api/dashboard/rows') {
+      const start = url.searchParams.get('start') || '', end = url.searchParams.get('end') || '';
+      if (startupSnapshot?.preparedPeriod.start === start && startupSnapshot.preparedPeriod.end === end) return response(startupSnapshot);
+      const current = snapshot || await loadDetails();
+      const materials = current.materials.filter(row => {
+        const added = row.material_time_basis === 'plan_added' ? row.material_plan_add_time?.slice(0, 10) : '';
+        return added ? added <= end : (!row.first_observed_date || row.first_observed_date <= end);
+      });
+      return response({ ...current, materials, rows: current.rows.filter(row => row.date >= start && row.date <= end) });
+    }
+    if (url.pathname === '/api/dashboard/collection-status') return response((startupSnapshot || snapshot).collectionStatus);
+    return response({ status: 'not_found' }, 404);
+  };
+
+  document.querySelector('#connectionStatus')?.remove();
+  document.querySelector('#connectOceanEngineButton')?.remove();
+  const reloadButton = document.querySelector('#reloadButton');
+  if (reloadButton) {
+    reloadButton.title = '获取最新发布版本，需重新输入访问密码';
+    reloadButton.addEventListener('click', event => {
+      event.preventDefault(); event.stopImmediatePropagation(); location.reload();
+    }, { capture: true });
+  }
+  for (const id of ['connectionStatus', 'connectionStatusText', 'connectOceanEngineButton']) {
+    if (!document.getElementById(id)) {
+      const node = document.createElement(id === 'connectOceanEngineButton' ? 'button' : 'span');
+      node.id = id; node.hidden = true; document.body.append(node);
+    }
+  }
+  const style = document.createElement('style');
+  style.textContent = '#dashboard-lock{position:fixed;inset:0;background:#f4f6fb;z-index:10000;display:grid;place-items:center;padding:24px}#dashboard-lock form{background:white;box-shadow:0 16px 48px #10203d22;border-radius:16px;padding:32px;width:min(100%,420px)}#dashboard-lock h2{margin:0 0 12px}#dashboard-lock p{line-height:1.6}#dashboard-lock input{box-sizing:border-box;width:100%;padding:12px;margin:12px 0}#dashboard-lock button{width:100%;padding:12px;background:#2563eb;color:white;border:0;border-radius:8px;cursor:pointer}#dashboard-lock button:disabled{opacity:.6;cursor:wait}#dashboard-lock .error{color:#b91c1c;min-height:24px}#dashboard-lock .progress{color:#64748b;min-height:24px}';
+  document.head.append(style);
+  const lock = document.createElement('div');
+  lock.id = 'dashboard-lock';
+  lock.innerHTML = '<form><h2>千川数据看板</h2><p>请输入访问密码，查看看板数据。</p><input type="password" autocomplete="off" required placeholder="访问密码" aria-label="访问密码"><button type="submit">解锁看板</button><p class="progress" role="status" aria-live="polite"></p><p class="error" role="alert"></p></form>';
+  document.body.append(lock);
+  progress = lock.querySelector('.progress');
+  lock.querySelector('form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (busy) return;
+    const button = lock.querySelector('button'), error = lock.querySelector('.error'), input = lock.querySelector('input');
+    busy = true; button.disabled = true; error.textContent = '';
+    try { await unlock(input.value); input.value = ''; lock.remove(); }
+    catch (e) {
+      show('');
+      error.textContent = e.name === 'OperationError' ? '访问密码不正确，请重试' : (e.message || '加载失败，请重试');
+    } finally { busy = false; button.disabled = false; }
+  });
+  // Begin while the viewer types; failed password attempts reuse this same packet.
+  if (window.DASHBOARD_STARTUP_PACKET) show('数据已准备好，请输入访问密码');
+  else loadPacket().catch(() => show('数据准备未完成，提交密码时将重新尝试'));
+})();
+
+</script>
+<script type="module">const {isConfirmedInactiveRow}=(()=>{
+const activityPolicyVersion = '2026-10-29-all-zero';
+
+const fields = [
+  ['spend'], ['gmv'], ['orders'], ['impressions'], ['clicks'],
+  ['video_play_count', 'videoPlayCount']
+];
+function number(value) {
+  if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null;
+  if (typeof value === 'string' && !value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Filter observed material-days only; absent days do not prove inactivity.
+// Earlier activity and later reactivations remain available in the raw history.
+function isConfirmedInactiveRow(row) {
+  const applicable=['roi2_live_material_analysis','site_promotion_post_data_live'].includes(row.source_fields?.dataset)?fields.slice(0,-1):fields;
+  const values = applicable.map(names => number(row[names.find(name => row[name] !== undefined)]));
+  const threeSecond = number(row.three_second_play_count ?? row.threeSecondPlayCount);
+  return values.every(value => value === 0) && (threeSecond === null || threeSecond === 0);
+}
+
+function excludeConfirmedInactiveRows(rows) {
+  return rows.filter(row => !isConfirmedInactiveRow(row));
+}
+
+return {isConfirmedInactiveRow};})();
+const {materialAddedDate,materialCountApplicable}=(()=>{
+const materialTimeVersion='2026-10-29-plan-added-1';
+// Only the two verified aggregate sources are exempt. A stale flag must not
+// hide an ordinary video's missing plan timestamp from coverage checks.
+const materialCountApplicable=row=>row.material_id!=='-2'&&!['roi2_live_material_analysis','site_promotion_post_data_live'].includes(row.source_fields?.dataset);
+const key=(account,id)=>`${account}|${id}`;
+const valid=time=>typeof time==='string'&&/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(time);
+
+function buildPlanTimeIndex(records) {
+ const index=new Map();
+ for(const record of records){
+  if(!valid(record.plan_add_time))continue;
+  const k=key(record.account_id,record.material_id),values=index.get(k)||[];
+  values.push(record);index.set(k,values);
+ }
+ return index;
+}
+function applyPlanTime(row,index) {
+ if(!materialCountApplicable(row))return {...row,material_count_applicable:false,material_library_create_time:null,material_plan_add_time:null,material_create_time:null,material_time_basis:'aggregate_not_applicable',material_plan_time_candidates:[],material_plan_ids:[],material_time_version:materialTimeVersion};
+ const records=index.get(key(row.account_id,row.material_id))||[];
+ const times=[...new Set(records.map(r=>r.plan_add_time))].sort();
+ // Multiple genuinely different plan times require an explicit business rule.
+ // Do not silently substitute the library date or choose one plan arbitrarily.
+ const added=times.length===1?times[0]:null;
+ return {...row,
+  material_count_applicable:true,
+  material_library_create_time:row.material_library_create_time??(row.material_time_basis?null:row.material_create_time)??null,
+  material_plan_add_time:added,material_create_time:added,
+  material_time_basis:added?'plan_added':times.length>1?'multiple_plan_times':'plan_time_pending',
+  material_plan_time_candidates:times,
+  material_plan_ids:[...new Set(records.flatMap(r=>r.plan_ids||[]))],
+  source_fields:{...row.source_fields,created:added?'roi2_material_upload_time':null,library_created:'material_create_time_v2',created_dataset:added?(records[0]?.source_dataset||'site_promotion_post_data_video'):'site_promotion_post_data_video'},
+  material_time_version:materialTimeVersion
+ };
+}
+function materialAddedDate(row) {
+ // Older rows without verified plan timestamps must not reuse library dates.
+ const time=row.material_plan_add_time;
+ return row.material_time_basis==='plan_added'&&valid(time)?time.slice(0,10):'';
+}
+
+// The registry uses videos already confirmed in the primary report history.
+// It carries identity and plan time only, never performance from another day.
+function buildMaterialRegistry(rows,{through='9999-12-31'}={}) {
+ const fields=['account_id','account_name','material_id','material_name','material_plan_add_time','material_time_basis','material_count_applicable','store','producer','product','video_type'];
+ const registry=new Map();
+ for(const row of rows){
+  if(!materialCountApplicable(row)||row.source_fields?.dataset!=='site_promotion_post_data_video')continue;
+  const added=materialAddedDate(row);
+  if(added?added>through:row.date>through)continue;
+  const id=key(row.account_id,row.material_id),old=registry.get(id);
+  if(old&&old.last_observed_date>row.date){
+   if(row.date<old.first_observed_date)old.first_observed_date=row.date;
+   continue;
+  }
+  registry.set(id,{...Object.fromEntries(fields.filter(f=>row[f]!==undefined).map(f=>[f,row[f]])),
+   source_fields:{dataset:row.source_fields.dataset},
+   first_observed_date:old?.first_observed_date<row.date?old.first_observed_date:row.date,
+   last_observed_date:row.date});
+ }
+ return [...registry.values()];
+}
+
+return {materialAddedDate,materialCountApplicable};})();
+
+
+let rows = [];
+let materialRegistry = [];
+let liveRowsLoaded = false;
+let loadedPeriod = null;
+let loadState = 'idle';
+let pageRecheckEvidence = null;
+let loadSequence = 0;
+let preparedRows = null;
+
+const isNumber = value => typeof value === "number" && Number.isFinite(value);
+const formatMoney = value => isNumber(value) ? `¥${value.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}` : (value ?? "—");
+const formatNumber = value => isNumber(value) ? value.toLocaleString("zh-CN") : (value ?? "—");
+const formatRatio = (numerator, denominator, digits = 2) => isNumber(numerator) && isNumber(denominator) && denominator ? (numerator / denominator).toFixed(digits) : "—";
+const formatPercent = (numerator, denominator) => isNumber(numerator) && isNumber(denominator) && denominator ? `${(numerator / denominator * 100).toFixed(2)}%` : "—";
+const categoryClass = category => ({ 放量: "green", 观察: "gray", 降预算: "orange", 排查: "red", 数据不足: "gray" }[category] || "gray");
+const normalizedRate = value => isNumber(value) ? (value > 1 ? value / 100 : value) : undefined;
+const derivedThreeSecondPlayCount = row => {
+  if (isNumber(row.threeSecondPlayCount)) return row.threeSecondPlayCount;
+  const rate = normalizedRate(row.threeSecondPlayRate);
+  if (isNumber(row.videoPlayCount) && isNumber(rate)) return row.videoPlayCount * rate;
+  return undefined;
+};
+
+const quickRange = document.querySelector("#quickRange");
+const dateFrom = document.querySelector("#dateFrom");
+const dateTo = document.querySelector("#dateTo");
+const storeFilter = document.querySelector("#storeFilter");
+const producerFilter = document.querySelector("#producerFilter");
+const productFilter = document.querySelector("#productFilter");
+const searchFilter = document.querySelector("#searchFilter");
+const dataBody = document.querySelector("#dataBody");
+const copyStatus = document.querySelector("#copyStatus");
+const connectOceanEngineButton = document.querySelector("#connectOceanEngineButton");
+const connectionStatus = document.querySelector("#connectionStatus");
+const connectionStatusText = document.querySelector("#connectionStatusText");
+const dataFreshness = document.querySelector("#dataFreshness");
+
+const escapeHtml = value => String(value ?? "")
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#39;");
+
+const OCEAN_ENGINE_UPGRADE_URL = "";
+
+async function refreshConnectionStatus() {
+  try {
+    const response = await fetch("/api/oceanengine/status", { cache: "no-store" });
+    if (!response.ok) throw new Error("status unavailable");
+    const status = await response.json();
+    const connected = status.loggedIn === true;
+    connectionStatus.dataset.state = connected ? "connected" : "disconnected";
+    connectionStatusText.textContent = connected ? "千川已接入" : "千川需验证";
+    connectionStatus.title = connected
+      ? "巨量引擎升级版会话有效，当前组织可继续采集"
+      : "巨量引擎登录会话已失效，请点击打开升级版并重新验证";
+  } catch {
+    connectionStatus.dataset.state = "offline";
+    connectionStatusText.textContent = "本地采集服务未启动";
+    connectionStatus.title = "请先运行 node server.js";
+  }
+}
+
+function addOptions(select, values, allLabel) {
+  select.innerHTML = `<option value="all">${allLabel}</option>` + values.map(value => `<option value="${value}">${value}</option>`).join("");
+}
+
+const shanghaiDate = (offsetDays = 0) => {
+  const date = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+};
+const shiftIsoDate = (value, days) => {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+function setDateRange(from, to, preset = "custom") {
+  dateFrom.value = from;
+  dateTo.value = to;
+  quickRange.value = preset;
+}
+
+function setDefaultDateRange() {
+  const end = shanghaiDate(-1);
+  setDateRange(`${end.slice(0, 7)}-01`, end, "month-to-yesterday");
+}
+
+function applyQuickRange() {
+  const end = shanghaiDate(-1);
+  if (quickRange.value === "month-to-yesterday") setDateRange(`${end.slice(0, 7)}-01`, end, "month-to-yesterday");
+  if (quickRange.value === "last7") {
+    setDateRange(shiftIsoDate(end, -6), end, "last7");
+  }
+  if (quickRange.value === "yesterday") setDateRange(end, end, "yesterday");
+  render();
+  loadDashboardRows();
+}
+
+function periodText() {
+  if (!dateFrom.value || !dateTo.value) return "请选择日期范围";
+  if (dateFrom.value === dateTo.value) return `${dateFrom.value} · 每日采集前一天数据`;
+  return `${dateFrom.value} 至 ${dateTo.value} · 每日采集前一天数据`;
+}
+
+function periodDisplay() {
+  if (!dateFrom.value || !dateTo.value) return "—";
+  const from = new Date(`${dateFrom.value}T00:00:00Z`);
+  const to = new Date(`${dateTo.value}T00:00:00Z`);
+  const format = date => `${date.getUTCMonth() + 1}月${date.getUTCDate()}日`;
+  return from.getTime() === to.getTime() ? format(from) : `${format(from)}～${format(to)}`;
+}
+
+function initFilters() {
+  addOptions(storeFilter, [...new Set(rows.map(row => row.store))], "全部店铺");
+  addOptions(producerFilter, sortProducers([...new Set(rows.map(row => row.creator))]), "全部制作方");
+  producerFilter.insertAdjacentHTML("beforeend", '<option value="__summary__">自产+供+AI（汇总）</option>');
+  addOptions(productFilter, [...new Set(rows.map(row => row.product))], "全部主推产品");
+  setDefaultDateRange();
+}
+
+function refreshDimensionFilters() {
+  const selected = { store: storeFilter.value, producer: producerFilter.value, product: productFilter.value };
+  const dimensions=[...rows,...materialRegistry,...(preparedRows || [])];
+  addOptions(storeFilter, [...new Set(dimensions.map(row => row.store).filter(Boolean))], "全部店铺");
+  addOptions(producerFilter, sortProducers([...new Set(dimensions.map(row => row.creator).filter(Boolean))]), "全部制作方");
+  producerFilter.insertAdjacentHTML("beforeend", '<option value="__summary__">自产+供+AI（汇总）</option>');
+  addOptions(productFilter, [...new Set(dimensions.map(row => row.product).filter(Boolean))], "全部主推产品");
+  if ([...storeFilter.options].some(option => option.value === selected.store)) storeFilter.value = selected.store;
+  if ([...producerFilter.options].some(option => option.value === selected.producer)) producerFilter.value = selected.producer;
+  if ([...productFilter.options].some(option => option.value === selected.product)) productFilter.value = selected.product;
+}
+
+function normalizeDashboardRow(row) {
+  return {
+    ...row,
+    date: row.date,
+    account: row.account_name || row.account_id || "—",
+    plan: row.plan_id || row.material_id || "—",
+    room: row.store || "—",
+    store: row.store,
+    creator: row.producer,
+    product: row.product,
+    videoType: row.video_type,
+    spend: row.spend,
+    gmv: row.gmv,
+    orders: row.orders,
+    impressions: row.impressions,
+    clicks: row.clicks,
+    videoPlayCount: row.video_play_count,
+    threeSecondPlayRate: row.three_second_play_rate,
+    threeSecondPlayCount: row.three_second_play_count,
+    materialCreateTime: row.material_create_time,
+    materialNew: row.materialNew,
+    monthlyPublished: row.monthlyPublished,
+    monthlyMaterialSpend: row.monthlyMaterialSpend,
+    cumulativePublished: row.cumulativePublished,
+    cumulativeMaterialSpend: row.cumulativeMaterialSpend
+  };
+}
+
+function hasCurrentPeriodData() {
+  return liveRowsLoaded && loadedPeriod?.start === dateFrom.value && loadedPeriod?.end === dateTo.value;
+}
+
+async function loadDashboardRows() {
+  const sequence = ++loadSequence;
+  const start = dateFrom.value;
+  const end = dateTo.value;
+  if (!start || !end) return;
+  if(start>end){dataFreshness.textContent='开始日期不能晚于结束日期';return;}
+  loadState = 'loading';
+  if (!hasCurrentPeriodData()) dataFreshness.textContent = '正在加载所选日期的数据';
+  render();
+  try {
+    const response = await fetch(`/api/dashboard/rows?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if(sequence!==loadSequence)return;
+    if (payload.status === "collector_not_ready") {
+      loadState = 'failed';
+      dataFreshness.textContent = "采集器待就绪，所选日期数据未加载";
+      render();
+      return;
+    }
+    if (!response.ok) throw new Error("dashboard rows unavailable");
+    if (payload.status === "ok" && Array.isArray(payload.rows)) {
+      if (payload.preparedRows && (payload.preparedPeriod?.start !== start || payload.preparedPeriod?.end !== end)) {
+        throw new Error('Prepared data does not match the selected dates');
+      }
+      preparedRows = Array.isArray(payload.preparedRows) ? payload.preparedRows : null;
+      rows = payload.rows.map(normalizeDashboardRow);
+      materialRegistry = (payload.materials || []).map(normalizeDashboardRow);
+      pageRecheckEvidence = payload.quality?.pageRecheck || null;
+      liveRowsLoaded = true;
+      loadedPeriod = {start, end};
+      loadState = 'ready';
+      refreshDimensionFilters();
+      if(sequence!==loadSequence)return;
+      const quality = payload.quality || {};
+      const available=payload.availablePeriod?.end||quality.end||quality.date;
+      const lag=available&&available<shanghaiDate(-1)?` · 待补采至${shanghaiDate(-1)}`:'';
+      dataFreshness.textContent = `千川数据已更新至 ${available||'待确认'}${lag} · 北京时间每日18:00采集前一天`;
+      try{
+        const runResponse=await fetch('/api/dashboard/collection-status',{cache:'no-store'});
+        if(runResponse.ok){const state=await runResponse.json();
+          if(sequence!==loadSequence)return;
+          if(state.run?.state==='running')dataFreshness.textContent+=' · 昨日数据采集中';
+          else if(state.run?.state==='failed')dataFreshness.textContent+=' · 采集失败，待重试';
+          else if(state.run?.state==='completed_with_warnings'){
+            const warnings=(state.run.processed||[]).flatMap(day=>day.coverageWarnings||[]);
+            dataFreshness.textContent+=warnings.some(w=>w.startsWith('video_metrics_all_zero:'))
+              ?` · ${state.run.targetDate} 播放数及3秒播放率返回全0，待复核`
+              :' · 部分采集字段待复核';
+          }
+          else if(state.missingDates?.length)dataFreshness.textContent+=` · ${state.missingDates.length}天待补采`;
+        }
+      }catch{}
+      render();
+      return;
+    }
+    throw new Error('Invalid dashboard response');
+  } catch {
+    if(sequence!==loadSequence)return;
+    loadState = 'failed';
+    dataFreshness.textContent = hasCurrentPeriodData() ? '刷新失败，当前保留同一日期范围的上次数据' : '所选日期加载失败，请刷新重试';
+    render();
+  }
+}
+
+function renderQuality() {}
+
+function filteredRows({ ignoreProducer = false, ignoreSearch = false } = {}) {
+  const query = searchFilter.value.trim().toLowerCase();
+  const from = dateFrom.value || "0000-01-01";
+  const to = dateTo.value || "9999-12-31";
+  return rows.filter(row => !isConfirmedInactiveRow(row) && row.date >= from && row.date <= to &&
+    (storeFilter.value === "all" || row.store === storeFilter.value) &&
+    (ignoreProducer || producerFilter.value === "all" || row.creator === producerFilter.value) &&
+    (productFilter.value === "all" || row.product === productFilter.value) &&
+    (ignoreSearch || !query || `${row.store} ${row.creator} ${row.product} ${row.plan}`.toLowerCase().includes(query)));
+}
+
+function sumNumeric(group, field) {
+  const values = group.map(row => row[field]).filter(isNumber);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) : undefined;
+}
+
+function sumThreeSecondPlayCount(group) {
+  const values = group.map(derivedThreeSecondPlayCount).filter(isNumber);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) : undefined;
+}
+
+const summaryMembers = new Set(["自产视频", "AI视频", "逐光", "美创", "影舞"]);
+// Matches the producer row order in the Excel source blocks.
+const producerOrder = ["自产视频", "AI视频", "逐光", "美创", "光年", "影舞", "AIGC", "达人视频", "画面直投", "待人工确认"];
+const producerRank = new Map(producerOrder.map((producer, index) => [producer, index]));
+
+function compareProducers(left, right) {
+  const leftRank = producerRank.get(left) ?? Number.MAX_SAFE_INTEGER;
+  const rightRank = producerRank.get(right) ?? Number.MAX_SAFE_INTEGER;
+  return leftRank - rightRank || left.localeCompare(right, "zh-CN");
+}
+
+function sortProducers(producers) {
+  return [...producers].sort(compareProducers);
+}
+
+function materialKey(row) {
+  // plan_id is not available in the material dataset and several assets can
+  // share the same creation timestamp. Use the account-scoped material ID.
+  return [row.account_id || row.account, row.materialId || row.material_id || row.plan].join("\u001f");
+}
+
+function createdDate(row) {
+  return materialAddedDate(row);
+}
+
+function buildAggregateRow(group, creator, summary = false, registryGroup = []) {
+  const from = dateFrom.value || "0000-01-01";
+  const to = dateTo.value || "9999-12-31";
+  const materials = new Map();
+  group.forEach(row => {
+    const key = materialKey(row);
+    if (!materials.has(key)) materials.set(key, row);
+  });
+  registryGroup.forEach(row => materials.set(materialKey(row),row));
+  const materialRows = [...materials.values()];
+  const seed = group[0] || registryGroup[0];
+  const countableMaterials=materialRows.filter(materialCountApplicable);
+  const completeTimes = countableMaterials.length>0&&countableMaterials.every(row => Boolean(createdDate(row)));
+  const monthStart = `${to.slice(0, 7)}-01`;
+  const monthMaterials = new Set(materialRows.filter(row => {
+    const created = createdDate(row);
+    return created && created >= monthStart && created <= to;
+  }).map(materialKey));
+  const selectedMaterials = new Set(materialRows.filter(row => {
+    const created = createdDate(row);
+    return created && created >= from && created <= to;
+  }).map(materialKey));
+  const cumulativeMaterials = new Set(materialRows.filter(row => {
+    const created = createdDate(row);
+    return created && created <= to;
+  }).map(materialKey));
+  const metricFor = keys => group.filter(row => keys.has(materialKey(row)));
+  const selectedRows = group.filter(row => selectedMaterials.has(materialKey(row)));
+  const monthRows = group.filter(row => monthMaterials.has(materialKey(row)));
+  const cumulativeRows = group.filter(row => cumulativeMaterials.has(materialKey(row)));
+  return {
+    summary,
+    date: seed.date,
+    account: "汇总",
+    plan: summary ? "自产+供+AI" : "制作方汇总",
+    room: seed.room,
+    store: seed.store,
+    creator,
+    product: seed.product,
+    videoType: seed.videoType,
+    spend: sumNumeric(group, "spend"),
+    gmv: sumNumeric(group, "gmv"),
+    orders: sumNumeric(group, "orders"),
+    materialNew: completeTimes ? selectedMaterials.size : undefined,
+    monthlyPublished: completeTimes ? monthMaterials.size : undefined,
+    monthlyMaterialSpend: completeTimes ? sumNumeric(monthRows, "spend") ?? 0 : undefined,
+    cumulativePublished: completeTimes ? cumulativeMaterials.size : undefined,
+    cumulativeMaterialSpend: sumNumeric(group, "spend"),
+    impressions: sumNumeric(group, "impressions"),
+    clicks: sumNumeric(group, "clicks"),
+    videoPlayCount: sumNumeric(group, "videoPlayCount"),
+    threeSecondPlayCount: sumThreeSecondPlayCount(group)
+  };
+}
+
+function aggregateRows(baseRows) {
+  const groups = new Map();
+  const registryGroups = new Map();
+  const registryContexts = new Map();
+  for(const row of materialRegistry){
+    if((storeFilter.value!=='all'&&row.store!==storeFilter.value)||(productFilter.value!=='all'&&row.product!==productFilter.value))continue;
+    if(createdDate(row)&&createdDate(row)>(dateTo.value||'9999-12-31'))continue;
+    const key=[row.store,row.videoType,row.product,row.creator].join('\u001f');
+    if(!registryGroups.has(key))registryGroups.set(key,[]);
+    registryGroups.get(key).push(row);
+    const context=[row.store,row.videoType,row.product].join('\u001f');
+    if(!registryContexts.has(context))registryContexts.set(context,[]);
+    registryContexts.get(context).push(row);
+  }
+  baseRows.forEach(row => {
+    const key = [row.store, row.videoType, row.product, row.creator].join("\u001f");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+  for(const key of registryGroups.keys())if(!groups.has(key))groups.set(key,[]);
+  const producerRows = [...groups.entries()].map(([key,group]) => buildAggregateRow(group, (group[0]||registryGroups.get(key)[0]).creator,false,registryGroups.get(key)||[]));
+  const contextGroups = new Map();
+  baseRows.forEach(row => {
+    const key = [row.store, row.videoType, row.product].join("\u001f");
+    if (!contextGroups.has(key)) contextGroups.set(key, []);
+    contextGroups.get(key).push(row);
+  });
+  const summaryRows = [...new Set([...contextGroups.keys(),...registryContexts.keys()])].flatMap(key=>{
+    const group=(contextGroups.get(key)||[]).filter(row=>summaryMembers.has(row.creator));
+    const registry=(registryContexts.get(key)||[]).filter(row=>summaryMembers.has(row.creator));
+    return group.length||registry.length?[buildAggregateRow(group,'自产+供+AI',true,registry)]:[];
+  });
+  const monthStart = `${(dateTo.value || "0000-01-01").slice(0, 7)}-01`;
+  const denominators = new Map([...contextGroups.entries()].map(([key, group]) => [key, {
+    monthly: group.filter(materialCountApplicable).every(row => Boolean(createdDate(row))) ? sumNumeric(group.filter(row => {
+      const created = createdDate(row);
+      return created && created >= monthStart && created <= (dateTo.value || "9999-12-31");
+    }), "spend") ?? 0 : undefined,
+    cumulative: sumNumeric(group, "spend")
+  }]));
+  const withShares = row => {
+    const key = [row.store, row.videoType, row.product].join("\u001f");
+    const denominator = denominators.get(key) || {};
+    return {
+      ...row,
+      monthlySpendShare: isNumber(row.monthlyMaterialSpend) && isNumber(denominator.monthly) && denominator.monthly ? row.monthlyMaterialSpend / denominator.monthly : undefined,
+      cumulativeSpendShare: isNumber(row.cumulativeMaterialSpend) && isNumber(denominator.cumulative) && denominator.cumulative ? row.cumulativeMaterialSpend / denominator.cumulative : undefined
+    };
+  };
+  return [...summaryRows, ...producerRows].map(withShares).sort((a, b) => {
+    const contextA = `${a.store}\u001f${a.product}\u001f${a.videoType}`;
+    const contextB = `${b.store}\u001f${b.product}\u001f${b.videoType}`;
+    if (contextA !== contextB) return contextA.localeCompare(contextB, "zh-CN");
+    if (a.summary !== b.summary) return a.summary ? -1 : 1;
+    return compareProducers(a.creator, b.creator);
+  });
+}
+
+function displayRows() {
+  if (!hasCurrentPeriodData()) return [];
+  const summaryOnly = producerFilter.value === "__summary__";
+  // Ratios and shares keep their full denominator while a producer/search
+  // filter only changes which already-aggregated rows are shown.
+  const baseRows = filteredRows({ ignoreProducer: true, ignoreSearch: true });
+  const aggregated = preparedRows ? preparedRows.filter(row =>
+    (storeFilter.value === 'all' || row.store === storeFilter.value) &&
+    (productFilter.value === 'all' || row.product === productFilter.value)) : aggregateRows(baseRows);
+  let visible = summaryOnly ? aggregated.filter(row => row.summary) :
+    producerFilter.value === "all" ? aggregated : aggregated.filter(row => row.creator === producerFilter.value);
+  const query = searchFilter.value.trim().toLowerCase();
+  if (query) visible = visible.filter(row => `${row.store} ${row.creator} ${row.product} ${row.plan}`.toLowerCase().includes(query));
+  return visible;
+}
+
+function excelRow(row) {
+  const threeSecondPlayRate = isNumber(row.videoPlayCount) && isNumber(derivedThreeSecondPlayCount(row))
+    ? derivedThreeSecondPlayCount(row) / row.videoPlayCount
+    : normalizedRate(row.threeSecondPlayRate);
+  return [
+    periodDisplay(),
+    "抖音",
+    row.videoType ?? "短视频",
+    row.store,
+    row.creator,
+    row.product,
+    row.materialNew,
+    row.monthlyPublished,
+    row.monthlyMaterialSpend,
+    row.monthlySpendShare,
+    row.cumulativePublished,
+    row.cumulativeMaterialSpend,
+    row.cumulativeSpendShare,
+    row.gmv,
+    row.gmv === undefined ? undefined : formatRatio(row.gmv, row.cumulativeMaterialSpend),
+    row.impressions,
+    row.clicks,
+    row.impressions === undefined || row.clicks === undefined ? undefined : formatPercent(row.clicks, row.impressions),
+    row.orders,
+    row.clicks === undefined ? undefined : formatPercent(row.orders ?? 0, row.clicks),
+    threeSecondPlayRate,
+  ];
+}
+
+function displayExcelValue(value, index) {
+  if (value === undefined || value === null || value === "") return "—";
+  if ([8, 11, 13].includes(index)) return formatMoney(value);
+  if ([9, 12, 17, 19, 20].includes(index)) return isNumber(value) ? `${(value * 100).toFixed(2)}%` : value;
+  if ([6, 7, 10, 15, 16, 18].includes(index)) return formatNumber(value);
+  return value;
+}
+
+function render() {
+  const visible = displayRows();
+  dataBody.innerHTML = visible.length ? visible.map(row => {
+    const values = excelRow(row);
+    return `<tr class="${row.summary ? "summary-row" : ""}">${values.map((value, index) => `<td class="${[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(index) ? "number" : ""} copyable" data-copy="${escapeHtml(value ?? "—")}">${escapeHtml(displayExcelValue(value, index))}</td>`).join("")}</tr>`;
+  }).join("") : `<tr class="empty-row"><td colspan="21">${hasCurrentPeriodData() ? '没有符合条件的数据' : loadState === 'failed' ? '所选日期数据加载失败，请点击刷新重试' : '正在加载所选日期的数据'}</td></tr>`;
+  document.querySelector("#resultCount").textContent = `显示 ${visible.length} 条`;
+  document.querySelector("#periodLabel").textContent = periodText();
+  renderQuality();
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const helper = document.createElement("textarea"); helper.value = text; document.body.appendChild(helper); helper.select(); document.execCommand("copy"); helper.remove(); }
+  copyStatus.textContent = "已复制";
+  window.setTimeout(() => { copyStatus.textContent = ""; }, 1600);
+}
+
+function asTsv(data) {
+  const headers = ["时间维度", "渠道", "视频类型", "店铺", "制作方", "主推产品", "制作条数（新）", "当月发布素材条数", "当月发布素材消耗", "当月消耗占比", "累计发布素材条数", "累计发布素材消耗", "累计消耗占比", "成交金额", "ROI", "展示次数", "点击次数", "点击率", "成交订单数", "转化率", "3秒播放率"];
+  const values=data.map(row=>excelRow(row).map((value,index)=>{
+    if(value===undefined||value===null)return '';
+    if([9,12,20].includes(index))return displayExcelValue(value,index);
+    if([8,11,13].includes(index)&&isNumber(value))return value.toFixed(2);
+    return value;
+  }));
+  return [headers, ...values].map(line => line.join("\t")).join("\n");
+}
+
+function exportCsv() {
+  const lines = asTsv(displayRows()).split("\n").map(line => line.split("\t"));
+  const csv = lines.map(line => line.map(value => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.href = url;
+  link.download = "qianchuan-material-creator-statistics.csv";
+  link.hidden = true;
+  document.body.appendChild(link);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+}
+
+quickRange.addEventListener("change", applyQuickRange);
+[dateFrom, dateTo, storeFilter, producerFilter, productFilter].forEach(element => element.addEventListener("change", () => {
+  if (element === dateFrom || element === dateTo) quickRange.value = "custom";
+  render();
+  if (element === dateFrom || element === dateTo) loadDashboardRows();
+}));
+searchFilter.addEventListener("input", render);
+document.querySelector("#clearButton").addEventListener("click", () => { setDefaultDateRange(); storeFilter.value = "all"; producerFilter.value = "all"; productFilter.value = "all"; searchFilter.value = ""; render(); loadDashboardRows(); });
+document.querySelector("#copyButton").addEventListener("click", () => copyText(asTsv(displayRows())));
+document.querySelector("#exportButton").addEventListener("click", exportCsv);
+document.querySelector("#reloadButton").addEventListener("click", () => {loadDashboardRows();refreshConnectionStatus();});
+connectOceanEngineButton.addEventListener("click", async () => {
+  try {
+    const response = await fetch("/api/oceanengine/open");
+    if (!response.ok) throw new Error("local launcher unavailable");
+    copyStatus.textContent = "已打开独立浏览器";
+  } catch {
+    window.open(OCEAN_ENGINE_UPGRADE_URL, "oceanengine-upgrade");
+    copyStatus.textContent = "已打开升级版链接";
+  }
+  window.setTimeout(refreshConnectionStatus, 1200);
+  window.setTimeout(() => { copyStatus.textContent = ""; }, 2200);
+});
+dataBody.addEventListener("click", event => { const cell = event.target.closest("[data-copy]"); if (cell) copyText(cell.dataset.copy); });
+
+initFilters();
+render();
+refreshConnectionStatus();
+loadDashboardRows();
+window.setInterval(refreshConnectionStatus, 30000);
+</script>
   </body>
 </html>

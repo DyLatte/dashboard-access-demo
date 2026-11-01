@@ -15,7 +15,7 @@
  return {...packet.meta,rows:table(packet.rows),materials:table(packet.materials)};
 }
   const originalFetch = window.fetch.bind(window);
-  let snapshot, packetPromise, finishUnlock, busy = false;
+  let snapshot, startupSnapshot, packetPromise, detailPromise, keyContext, finishUnlock, busy = false;
   const unlocked = new Promise(resolve => { finishUnlock = resolve; });
   const timing = window.dashboardLoadTiming = {};
   const response = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -30,41 +30,64 @@
     if (!packetPromise) {
       // Only ciphertext uses the browser HTTP cache. A new publication has a new filename.
       packetPromise = (async () => {
-        show('正在准备加密数据…');
+        const downloadStarted = performance.now();
+        if (!startupSnapshot) show('正在准备加密数据…');
         const res = await originalFetch(window.DASHBOARD_SNAPSHOT, { cache: 'force-cache' });
         if (!res.ok) throw new Error('加密数据下载失败，请稍后重试');
         const packet = await res.json();
         if (packet.version !== 1 || packet.iterations < 310000) throw new Error('加密数据格式不正确');
-        timing.downloadMs = Math.round(performance.now() - started);
-        if (!busy) show('数据已准备好，请输入访问密码');
+        timing[window.DASHBOARD_STARTUP_PACKET ? 'detailDownloadMs' : 'downloadMs'] = Math.round(performance.now() - downloadStarted);
+        if (!busy && !startupSnapshot) show('数据已准备好，请输入访问密码');
         return packet;
       })().catch(error => { packetPromise = undefined; throw error; });
     }
     return packetPromise;
   }
 
+  async function decodePacket(packet, key) {
+    const ciphertext = bytes(packet.data), tag = bytes(packet.tag);
+    const combined = new Uint8Array(ciphertext.length + tag.length);
+    combined.set(ciphertext); combined.set(tag, ciphertext.length);
+    const compressed = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes(packet.iv) }, key, combined);
+    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return unpackSnapshot(JSON.parse(await new Response(stream).text()));
+  }
+
+  function loadDetails() {
+    if (snapshot) return Promise.resolve(snapshot);
+    if (!detailPromise) detailPromise = (async () => {
+      const packet = await loadPacket();
+      if (packet.salt !== keyContext.salt || packet.iterations !== keyContext.iterations) throw new Error('明细与首屏数据版本不一致，请刷新');
+      snapshot = await decodePacket(packet, keyContext.key);
+      return snapshot;
+    })().catch(error => { detailPromise = undefined; throw error; });
+    return detailPromise;
+  }
+
   async function unlock(password) {
     const submitted = performance.now();
     show('正在读取加密数据…');
-    const packet = await loadPacket();
+    const packet = window.DASHBOARD_STARTUP_PACKET || await loadPacket();
+    if (packet.version !== 1 || packet.iterations < 310000) throw new Error('加密数据格式不正确');
     timing.downloadWaitMs = Math.round(performance.now() - submitted);
     show('正在验证密码…');
     const verifyStarted = performance.now();
     const rawKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
     const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: bytes(packet.salt), iterations: packet.iterations,
       hash: 'SHA-256' }, rawKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    const ciphertext = bytes(packet.data), tag = bytes(packet.tag);
-    const combined = new Uint8Array(ciphertext.length + tag.length);
-    combined.set(ciphertext); combined.set(tag, ciphertext.length);
-    const compressed = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes(packet.iv) }, key, combined);
-    timing.decryptMs = Math.round(performance.now() - verifyStarted);
     show('正在加载看板…');
-    const expandStarted = performance.now();
-    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
-    snapshot = unpackSnapshot(JSON.parse(await new Response(stream).text()));
-    timing.expandMs = Math.round(performance.now() - expandStarted);
+    const decoded = await decodePacket(packet, key);
+    timing.decryptMs = Math.round(performance.now() - verifyStarted);
+    if (window.DASHBOARD_STARTUP_PACKET) {
+      if (!Array.isArray(decoded.preparedRows) || !decoded.preparedPeriod) throw new Error('首屏汇总格式不正确');
+      startupSnapshot = decoded;
+      keyContext = { key, salt: packet.salt, iterations: packet.iterations };
+      timing.inlineStartup = true; timing.downloadMs = 0;
+    } else snapshot = decoded;
     timing.unlockMs = Math.round(performance.now() - submitted);
     finishUnlock();
+    // Warm other date ranges after the first table can paint; never hold it up.
+    if (startupSnapshot) setTimeout(() => loadDetails().catch(() => { timing.detailDownloadFailed = true; }), 500);
   }
 
   window.fetch = async (input, init = {}) => {
@@ -78,13 +101,15 @@
     await unlocked;
     if (url.pathname === '/api/dashboard/rows') {
       const start = url.searchParams.get('start') || '', end = url.searchParams.get('end') || '';
-      const materials = snapshot.materials.filter(row => {
+      if (startupSnapshot?.preparedPeriod.start === start && startupSnapshot.preparedPeriod.end === end) return response(startupSnapshot);
+      const current = snapshot || await loadDetails();
+      const materials = current.materials.filter(row => {
         const added = row.material_time_basis === 'plan_added' ? row.material_plan_add_time?.slice(0, 10) : '';
         return added ? added <= end : (!row.first_observed_date || row.first_observed_date <= end);
       });
-      return response({ ...snapshot, materials, rows: snapshot.rows.filter(row => row.date >= start && row.date <= end) });
+      return response({ ...current, materials, rows: current.rows.filter(row => row.date >= start && row.date <= end) });
     }
-    if (url.pathname === '/api/dashboard/collection-status') return response(snapshot.collectionStatus);
+    if (url.pathname === '/api/dashboard/collection-status') return response((startupSnapshot || snapshot).collectionStatus);
     return response({ status: 'not_found' }, 404);
   };
 
@@ -123,6 +148,7 @@
     } finally { busy = false; button.disabled = false; }
   });
   // Begin while the viewer types; failed password attempts reuse this same packet.
-  loadPacket().catch(() => show('数据准备未完成，提交密码时将重新尝试'));
+  if (window.DASHBOARD_STARTUP_PACKET) show('数据已准备好，请输入访问密码');
+  else loadPacket().catch(() => show('数据准备未完成，提交密码时将重新尝试'));
 })();
 

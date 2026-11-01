@@ -1,5 +1,5 @@
-import { isConfirmedInactiveRow } from './material-activity.js?v=20261101110641';
-import { materialAddedDate, materialCountApplicable } from './material-time.js?v=20261101110641';
+import { isConfirmedInactiveRow } from './material-activity.js?v=20261101113920';
+import { materialAddedDate, materialCountApplicable } from './material-time.js?v=20261101113920';
 
 
 let rows = [];
@@ -9,6 +9,7 @@ let loadedPeriod = null;
 let loadState = 'idle';
 let pageRecheckEvidence = null;
 let loadSequence = 0;
+let preparedRows = null;
 
 const isNumber = value => typeof value === "number" && Number.isFinite(value);
 const formatMoney = value => isNumber(value) ? `¥${value.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}` : (value ?? "—");
@@ -127,7 +128,7 @@ function initFilters() {
 
 function refreshDimensionFilters() {
   const selected = { store: storeFilter.value, producer: producerFilter.value, product: productFilter.value };
-  const dimensions=[...rows,...materialRegistry];
+  const dimensions=[...rows,...materialRegistry,...(preparedRows || [])];
   addOptions(storeFilter, [...new Set(dimensions.map(row => row.store).filter(Boolean))], "全部店铺");
   addOptions(producerFilter, sortProducers([...new Set(dimensions.map(row => row.creator).filter(Boolean))]), "全部制作方");
   producerFilter.insertAdjacentHTML("beforeend", '<option value="__summary__">自产+供+AI（汇总）</option>');
@@ -190,6 +191,10 @@ async function loadDashboardRows() {
     }
     if (!response.ok) throw new Error("dashboard rows unavailable");
     if (payload.status === "ok" && Array.isArray(payload.rows)) {
+      if (payload.preparedRows && (payload.preparedPeriod?.start !== start || payload.preparedPeriod?.end !== end)) {
+        throw new Error('Prepared data does not match the selected dates');
+      }
+      preparedRows = Array.isArray(payload.preparedRows) ? payload.preparedRows : null;
       rows = payload.rows.map(normalizeDashboardRow);
       materialRegistry = (payload.materials || []).map(normalizeDashboardRow);
       pageRecheckEvidence = payload.quality?.pageRecheck || null;
@@ -396,7 +401,9 @@ function displayRows() {
   // Ratios and shares keep their full denominator while a producer/search
   // filter only changes which already-aggregated rows are shown.
   const baseRows = filteredRows({ ignoreProducer: true, ignoreSearch: true });
-  const aggregated = aggregateRows(baseRows);
+  const aggregated = preparedRows ? preparedRows.filter(row =>
+    (storeFilter.value === 'all' || row.store === storeFilter.value) &&
+    (productFilter.value === 'all' || row.product === productFilter.value)) : aggregateRows(baseRows);
   let visible = summaryOnly ? aggregated.filter(row => row.summary) :
     producerFilter.value === "all" ? aggregated : aggregated.filter(row => row.creator === producerFilter.value);
   const query = searchFilter.value.trim().toLowerCase();
