@@ -3,7 +3,7 @@
   let snapshot;
   let finishUnlock;
   const unlocked = new Promise(resolve => { finishUnlock = resolve; });
-  const casesKey = 'demo-weekly-cases-v1';
+  const casesKey = 'qianchuan-weekly-cases-v1';
   const response = (body, status = 200) => new Response(JSON.stringify(body), {
     status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
   });
@@ -60,6 +60,17 @@
 
   document.querySelector('#connectionStatus')?.remove();
   document.querySelector('#connectOceanEngineButton')?.remove();
+  // A static deployment changes the HTML's snapshot filename. Reopen that
+  // deployment rather than querying yesterday's already decrypted in-memory file.
+  const reloadButton = document.querySelector('#reloadButton');
+  if (reloadButton) {
+    reloadButton.title = '获取最新发布版本，需重新输入访问密码';
+    reloadButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      location.reload();
+    }, { capture: true });
+  }
   // app.js retains these selectors, so provide hidden inert nodes.
   for (const id of ['connectionStatus', 'connectionStatusText', 'connectOceanEngineButton']) {
     if (!document.getElementById(id)) {
@@ -72,7 +83,7 @@
   document.head.append(style);
   const lock = document.createElement('div');
   lock.id = 'dashboard-lock';
-  lock.innerHTML = '<form><h2>千川数据看板</h2><p>此站全部使用虚构演示数据，仅供访问与功能测试。公开演示口令：demo2026。页面在浏览器内解密。</p><input type="password" autocomplete="off" required placeholder="访问密码" aria-label="访问密码"><button type="submit">解锁看板</button><p class="error" role="alert"></p></form>';
+  lock.innerHTML = '<form><h2>千川数据看板</h2><p>请输入交付方提供的访问密码，解锁加密数据。页面仅在本机浏览器内解密。</p><input type="password" autocomplete="off" required placeholder="访问密码" aria-label="访问密码"><button type="submit">解锁看板</button><p class="error" role="alert"></p></form>';
   document.body.append(lock);
   lock.querySelector('form').addEventListener('submit', async event => {
     event.preventDefault();

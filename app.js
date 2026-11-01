@@ -1,5 +1,5 @@
-import { isConfirmedInactiveRow } from './material-activity.js?v=20261101073124';
-import { materialAddedDate, materialCountApplicable } from './material-time.js?v=20261101073124';
+import { isConfirmedInactiveRow } from './material-activity.js?v=20261101092646';
+import { materialAddedDate, materialCountApplicable } from './material-time.js?v=20261101092646';
 
 
 let rows = [];
@@ -255,7 +255,7 @@ async function loadDashboardRows() {
       const quality = payload.quality || {};
       const available=payload.availablePeriod?.end||quality.end||quality.date;
       const lag=available&&available<shanghaiDate(-1)?` · 待补采至${shanghaiDate(-1)}`:'';
-      dataFreshness.textContent = `虚构演示数据截至 ${available||'待确认'}${lag} · 北京时间每日18:00采集前一天`;
+      dataFreshness.textContent = `千川数据已更新至 ${available||'待确认'}${lag} · 北京时间每日18:00采集前一天`;
       try{
         const runResponse=await fetch('/api/dashboard/collection-status',{cache:'no-store'});
         if(runResponse.ok){const state=await runResponse.json();
@@ -542,10 +542,17 @@ function exportCsv() {
   const csv = lines.map(line => line.map(value => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  link.href = url;
   link.download = "qianchuan-material-creator-statistics.csv";
-  link.click();
-  URL.revokeObjectURL(link.href);
+  link.hidden = true;
+  document.body.appendChild(link);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
 }
 
 quickRange.addEventListener("change", applyQuickRange);
