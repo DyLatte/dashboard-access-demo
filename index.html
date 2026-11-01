@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+<meta name="robots" content="noindex,nofollow">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>看板访问测试 · 全部为虚构演示数据</title>
+    <link rel="stylesheet" href="styles.css?v=20261101073124" />
+  </head>
+  <body>
+<aside role="note" style="background:#fff3c4;padding:12px;text-align:center;font-weight:bold">网络与功能测试 · 全部店铺、账户、产品和数值均为虚构演示数据 · 演示口令：demo2026</aside>
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">Q</div>
+        <div>
+          <p class="eyebrow">投放数据中心</p>
+          <h1>千川投放数据看板</h1>
+        </div>
+      </div>
+      <div class="topbar-meta">
+        <span class="connection-status" id="connectionStatus" data-state="checking">
+          <span class="status-dot"></span>
+          <span id="connectionStatusText">千川连接检查中</span>
+        </span>
+        <span id="dataFreshness">正在读取采集状态</span>
+        <button class="secondary-button" id="connectOceanEngineButton" type="button">打开巨量引擎升级版</button>
+        <button class="ghost-button" id="reloadButton" type="button">刷新</button>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="workspace-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">抖音 · Excel 字段映射</p>
+            <h2>素材-制作方数据统计</h2>
+            <p class="panel-subtitle" id="periodLabel">本月 1 日至昨天 · 每日采集前一天数据</p>
+          </div>
+          <div class="panel-actions">
+            <button class="secondary-button" id="copyButton" type="button">复制当前表格</button>
+            <button class="primary-button" id="exportButton" type="button">导出 CSV</button>
+          </div>
+        </div>
+
+        <div class="filter-bar" aria-label="数据筛选">
+          <label>
+            <span>快捷时间</span>
+            <select id="quickRange">
+              <option value="month-to-yesterday">本月截至昨天</option>
+              <option value="last7">近 7 天</option>
+              <option value="yesterday">昨天</option>
+              <option value="custom">自定义</option>
+            </select>
+          </label>
+          <label>
+            <span>开始日期</span>
+            <input id="dateFrom" type="date" />
+          </label>
+          <label>
+            <span>结束日期</span>
+            <input id="dateTo" type="date" />
+          </label>
+          <label>
+            <span>店铺</span>
+            <select id="storeFilter"></select>
+          </label>
+          <label>
+            <span>制作方</span>
+            <select id="producerFilter"></select>
+          </label>
+          <label>
+            <span>主推产品</span>
+            <select id="productFilter"></select>
+          </label>
+          <label class="search-field">
+            <span>搜索店铺、制作方或主推产品</span>
+            <input id="searchFilter" type="search" placeholder="输入关键词" />
+          </label>
+          <button class="text-button" id="clearButton" type="button">清除筛选</button>
+        </div>
+
+        <div class="table-toolbar">
+          <span id="resultCount">显示 0 条</span>
+          <span class="toolbar-hint">点击指标单元格复制 · 周优秀案例仅在当前浏览器保存 · 合计指标按分子/分母重算</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>时间维度</th>
+                <th>渠道</th>
+                <th>视频类型</th>
+                <th>店铺</th>
+                <th>制作方</th>
+                <th>主推产品</th>
+                <th>制作条数（新）</th>
+                <th>当月发布素材条数</th>
+                <th>当月发布素材消耗</th>
+                <th>当月消耗占比</th>
+                <th>累计发布素材条数</th>
+                <th>累计发布素材消耗</th>
+                <th>累计消耗占比</th>
+                <th>成交金额</th>
+                <th>ROI</th>
+                <th>展示次数</th>
+                <th>点击次数</th>
+                <th>点击率</th>
+                <th>成交订单数</th>
+                <th>转化率</th>
+                <th>3秒播放率</th>
+                <th>周优秀案例</th>
+              </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <span>全部为虚构演示数据，仅用于测试访问、筛选、复制和导出</span>
+        <span id="copyStatus" role="status" aria-live="polite"></span>
+      </footer>
+    </main>
+    <script>window.DASHBOARD_SNAPSHOT="demo-snapshot.enc.json";</script>
+    <script src="public-bootstrap.js?v=20261101073124"></script>
+    <script type="module" src="app.js?v=20261101073124"></script>
+  </body>
+</html>
