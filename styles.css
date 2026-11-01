@@ -75,13 +75,6 @@ td.copyable:hover { background: #f1f6fa; }
 .summary-row td { color: #1d4f76; background: #eef6fb; border-top: 2px solid #9fc4dd; font-weight: 700; }
 .summary-row td.copyable:hover { background: #e2f0f8; }
 .number { text-align: right; font-variant-numeric: tabular-nums; }
-.weekly-case-cell { min-width: 190px; padding: 7px 10px; }
-.weekly-case-input { width: 100%; min-width: 170px; min-height: 32px; padding: 5px 8px; color: var(--ink); background: #fff; border: 1px solid #d6dce2; border-radius: 5px; outline: none; }
-.weekly-case-input::placeholder { color: #a0a9b2; }
-.weekly-case-input:focus { border-color: #2c73ad; box-shadow: 0 0 0 3px #e6f0f8; }
-.weekly-case-input.saved { border-color: #4bb494; background: #f1fbf7; }
-.weekly-case-input.save-error { border-color: #cc5b5b; background: #fff5f5; }
-.summary-row .weekly-case-input { font-weight: 400; }
 .tag { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 4px; font-size: 12px; }
 .tag.green { color: #08745d; background: #e4f5ef; }
 .tag.orange { color: #a4571a; background: #fff0e4; }

@@ -1,5 +1,5 @@
-import { isConfirmedInactiveRow } from './material-activity.js?v=20261101100243';
-import { materialAddedDate, materialCountApplicable } from './material-time.js?v=20261101100243';
+import { isConfirmedInactiveRow } from './material-activity.js?v=20261101110641';
+import { materialAddedDate, materialCountApplicable } from './material-time.js?v=20261101110641';
 
 
 let rows = [];
@@ -9,8 +9,6 @@ let loadedPeriod = null;
 let loadState = 'idle';
 let pageRecheckEvidence = null;
 let loadSequence = 0;
-let weeklyExcellentCases = new Map();
-const weeklyExcellentSaveTimers = new WeakMap();
 
 const isNumber = value => typeof value === "number" && Number.isFinite(value);
 const formatMoney = value => isNumber(value) ? `¥${value.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}` : (value ?? "—");
@@ -46,56 +44,6 @@ const escapeHtml = value => String(value ?? "")
   .replaceAll(">", "&gt;")
   .replaceAll('"', "&quot;")
   .replaceAll("'", "&#39;");
-
-function weeklyExcellentKey(row) {
-  return [dateFrom.value, dateTo.value, row.store, row.videoType, row.creator, row.product]
-    .map(value => String(value ?? "").length + ":" + String(value ?? ""))
-    .join("|");
-}
-
-function weeklyExcellentValue(row) {
-  return weeklyExcellentCases.get(weeklyExcellentKey(row))?.value || "";
-}
-
-async function loadWeeklyExcellentCases() {
-  const start = dateFrom.value;
-  const end = dateTo.value;
-  if (!start || !end) return;
-  try {
-    const response = await fetch(`/api/dashboard/weekly-excellent?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { cache: "no-store" });
-    if (!response.ok) return;
-    const payload = await response.json();
-    weeklyExcellentCases = new Map((payload.cases || []).map(item => [item.key, item]));
-  } catch {
-    weeklyExcellentCases = new Map();
-  }
-}
-
-async function saveWeeklyExcellent(input) {
-  const row = JSON.parse(input.dataset.weekCase);
-  const key = weeklyExcellentKey(row);
-  const value = input.value.trim();
-  input.disabled = true;
-  try {
-    const response = await fetch("/api/dashboard/weekly-excellent", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, value, start: dateFrom.value, end: dateTo.value, ...row })
-    });
-    if (!response.ok) throw new Error("save failed");
-    if (value) weeklyExcellentCases.set(key, { key, value, start: dateFrom.value, end: dateTo.value, ...row });
-    else weeklyExcellentCases.delete(key);
-    input.classList.remove("save-error");
-    input.classList.add("saved");
-    copyStatus.textContent = "周优秀案例已保存";
-    window.setTimeout(() => input.classList.remove("saved"), 1200);
-    window.setTimeout(() => { if (copyStatus.textContent === "周优秀案例已保存") copyStatus.textContent = ""; }, 1800);
-  } catch {
-    input.classList.add("save-error");
-  } finally {
-    input.disabled = false;
-  }
-}
 
 const OCEAN_ENGINE_UPGRADE_URL = "";
 
@@ -237,7 +185,6 @@ async function loadDashboardRows() {
     if (payload.status === "collector_not_ready") {
       loadState = 'failed';
       dataFreshness.textContent = "采集器待就绪，所选日期数据未加载";
-      await loadWeeklyExcellentCases();
       render();
       return;
     }
@@ -250,7 +197,6 @@ async function loadDashboardRows() {
       loadedPeriod = {start, end};
       loadState = 'ready';
       refreshDimensionFilters();
-      await loadWeeklyExcellentCases();
       if(sequence!==loadSequence)return;
       const quality = payload.quality || {};
       const available=payload.availablePeriod?.end||quality.end||quality.date;
@@ -484,7 +430,6 @@ function excelRow(row) {
     row.orders,
     row.clicks === undefined ? undefined : formatPercent(row.orders ?? 0, row.clicks),
     threeSecondPlayRate,
-    weeklyExcellentValue(row)
   ];
 }
 
@@ -496,24 +441,12 @@ function displayExcelValue(value, index) {
   return value;
 }
 
-function renderWeeklyExcellentInput(row) {
-  const caseData = {
-    store: row.store || "",
-    videoType: row.videoType || "",
-    creator: row.creator || "",
-    product: row.product || ""
-  };
-  return `<input class="weekly-case-input" type="text" maxlength="500" placeholder="填写案例" value="${escapeHtml(weeklyExcellentValue(row))}" data-week-case="${escapeHtml(JSON.stringify(caseData))}" aria-label="周优秀案例" />`;
-}
-
 function render() {
   const visible = displayRows();
   dataBody.innerHTML = visible.length ? visible.map(row => {
     const values = excelRow(row);
-    return `<tr class="${row.summary ? "summary-row" : ""}">${values.map((value, index) => index === 21
-      ? `<td class="weekly-case-cell">${renderWeeklyExcellentInput(row)}</td>`
-      : `<td class="${[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(index) ? "number" : ""} copyable" data-copy="${escapeHtml(value ?? "—")}">${escapeHtml(displayExcelValue(value, index))}</td>`).join("")}</tr>`;
-  }).join("") : `<tr class="empty-row"><td colspan="22">${hasCurrentPeriodData() ? '没有符合条件的数据' : loadState === 'failed' ? '所选日期数据加载失败，请点击刷新重试' : '正在加载所选日期的数据'}</td></tr>`;
+    return `<tr class="${row.summary ? "summary-row" : ""}">${values.map((value, index) => `<td class="${[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(index) ? "number" : ""} copyable" data-copy="${escapeHtml(value ?? "—")}">${escapeHtml(displayExcelValue(value, index))}</td>`).join("")}</tr>`;
+  }).join("") : `<tr class="empty-row"><td colspan="21">${hasCurrentPeriodData() ? '没有符合条件的数据' : loadState === 'failed' ? '所选日期数据加载失败，请点击刷新重试' : '正在加载所选日期的数据'}</td></tr>`;
   document.querySelector("#resultCount").textContent = `显示 ${visible.length} 条`;
   document.querySelector("#periodLabel").textContent = periodText();
   renderQuality();
@@ -527,7 +460,7 @@ async function copyText(text) {
 }
 
 function asTsv(data) {
-  const headers = ["时间维度", "渠道", "视频类型", "店铺", "制作方", "主推产品", "制作条数（新）", "当月发布素材条数", "当月发布素材消耗", "当月消耗占比", "累计发布素材条数", "累计发布素材消耗", "累计消耗占比", "成交金额", "ROI", "展示次数", "点击次数", "点击率", "成交订单数", "转化率", "3秒播放率", "周优秀案例"];
+  const headers = ["时间维度", "渠道", "视频类型", "店铺", "制作方", "主推产品", "制作条数（新）", "当月发布素材条数", "当月发布素材消耗", "当月消耗占比", "累计发布素材条数", "累计发布素材消耗", "累计消耗占比", "成交金额", "ROI", "展示次数", "点击次数", "点击率", "成交订单数", "转化率", "3秒播放率"];
   const values=data.map(row=>excelRow(row).map((value,index)=>{
     if(value===undefined||value===null)return '';
     if([9,12,20].includes(index))return displayExcelValue(value,index);
@@ -562,26 +495,6 @@ quickRange.addEventListener("change", applyQuickRange);
   if (element === dateFrom || element === dateTo) loadDashboardRows();
 }));
 searchFilter.addEventListener("input", render);
-dataBody.addEventListener("change", event => {
-  const input = event.target.closest(".weekly-case-input");
-  if (input) {
-    window.clearTimeout(weeklyExcellentSaveTimers.get(input));
-    saveWeeklyExcellent(input);
-  }
-});
-dataBody.addEventListener("input", event => {
-  const input = event.target.closest(".weekly-case-input");
-  if (!input) return;
-  window.clearTimeout(weeklyExcellentSaveTimers.get(input));
-  weeklyExcellentSaveTimers.set(input, window.setTimeout(() => saveWeeklyExcellent(input), 500));
-});
-dataBody.addEventListener("keydown", event => {
-  const input = event.target.closest(".weekly-case-input");
-  if (input && event.key === "Enter") {
-    event.preventDefault();
-    input.blur();
-  }
-});
 document.querySelector("#clearButton").addEventListener("click", () => { setDefaultDateRange(); storeFilter.value = "all"; producerFilter.value = "all"; productFilter.value = "all"; searchFilter.value = ""; render(); loadDashboardRows(); });
 document.querySelector("#copyButton").addEventListener("click", () => copyText(asTsv(displayRows())));
 document.querySelector("#exportButton").addEventListener("click", exportCsv);
