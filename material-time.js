@@ -1,7 +1,7 @@
 export const materialTimeVersion='2026-10-29-plan-added-1';
 // Only the two verified aggregate sources are exempt. A stale flag must not
 // hide an ordinary video's missing plan timestamp from coverage checks.
-export const materialCountApplicable=row=>row.material_id!=='-2'&&!['roi2_live_material_analysis','site_promotion_post_data_live'].includes(row.source_fields?.dataset);
+export const materialCountApplicable=row=>row.material_id!=='-2'&&!['roi2_live_material_analysis','site_promotion_post_data_live','overall_roi_promotion_data_live_material_room_cf'].includes(row.source_fields?.dataset);
 const key=(account,id)=>`${account}|${id}`;
 const valid=time=>typeof time==='string'&&/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(time);
 
@@ -44,7 +44,7 @@ export function buildMaterialRegistry(rows,{through='9999-12-31'}={}) {
  const fields=['account_id','account_name','material_id','material_name','material_plan_add_time','material_time_basis','material_count_applicable','store','producer','product','video_type'];
  const registry=new Map();
  for(const row of rows){
-  if(!materialCountApplicable(row)||row.source_fields?.dataset!=='site_promotion_post_data_video')continue;
+  if(!materialCountApplicable(row)||!['site_promotion_post_data_video','overall_roi_promotion_data_live_material_cf'].includes(row.source_fields?.dataset))continue;
   const added=materialAddedDate(row);
   if(added?added>through:row.date>through)continue;
   const id=key(row.account_id,row.material_id),old=registry.get(id);

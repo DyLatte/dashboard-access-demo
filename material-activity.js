@@ -14,7 +14,7 @@ function number(value) {
 // Filter observed material-days only; absent days do not prove inactivity.
 // Earlier activity and later reactivations remain available in the raw history.
 export function isConfirmedInactiveRow(row) {
-  const applicable=['roi2_live_material_analysis','site_promotion_post_data_live'].includes(row.source_fields?.dataset)?fields.slice(0,-1):fields;
+  const applicable=['roi2_live_material_analysis','site_promotion_post_data_live','overall_roi_promotion_data_live_material_room_cf'].includes(row.source_fields?.dataset)?fields.slice(0,-1):fields;
   const values = applicable.map(names => number(row[names.find(name => row[name] !== undefined)]));
   const threeSecond = number(row.three_second_play_count ?? row.threeSecondPlayCount);
   return values.every(value => value === 0) && (threeSecond === null || threeSecond === 0);
